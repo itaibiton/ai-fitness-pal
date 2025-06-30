@@ -132,6 +132,7 @@ export const useAuth = () => {
     isAuthenticated,
     isLoading: isLoading || (sessionToken && user === undefined) || isAuthenticating,
     user: user as User | null | undefined,
+    sessionToken,
     handleSignIn,
     handleSignUp,
     handleSignOut,

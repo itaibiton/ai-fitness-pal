@@ -4,9 +4,10 @@ import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
 import { AuthStack } from './AuthStack';
 import { AppStack } from './AppStack';
+import { OnboardingStack } from './OnboardingStack';
 
 export const RootNavigator: React.FC = () => {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { isAuthenticated, isLoading, user } = useAuth();
 
   // Show loading spinner while checking authentication state
   if (isLoading) {
@@ -17,9 +18,26 @@ export const RootNavigator: React.FC = () => {
     );
   }
 
+  // Determine which stack to show
+  const getActiveStack = () => {
+    if (!isAuthenticated) {
+      return <AuthStack />;
+    }
+    
+    // For now, always show onboarding for authenticated users during development
+    // TODO: In Phase 1.4, we'll add onboardingCompleted check to user data
+    const onboardingCompleted = false; // user?.onboardingCompleted || false;
+    
+    if (!onboardingCompleted) {
+      return <OnboardingStack />;
+    }
+    
+    return <AppStack />;
+  };
+
   return (
     <NavigationContainer>
-      {isAuthenticated ? <AppStack /> : <AuthStack />}
+      {getActiveStack()}
     </NavigationContainer>
   );
 };
