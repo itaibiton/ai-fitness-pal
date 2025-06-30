@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { View, ActivityIndicator } from 'react-native';
 import { useAuth } from '../hooks/useAuth';
@@ -9,13 +9,25 @@ import { OnboardingStack } from './OnboardingStack';
 export const RootNavigator: React.FC = () => {
   const { isAuthenticated, isLoading, user } = useAuth();
 
-  // Debug logging for navigation decisions
-  console.log('RootNavigator state:', {
+  // Track every render to see if RootNavigator is re-rendering
+  console.log('🔄 RootNavigator render:', {
     isAuthenticated,
     isLoading,
     hasUser: !!user,
-    userEmail: user?.email
+    userEmail: user?.email,
+    timestamp: new Date().toISOString()
   });
+
+  // Log navigation state changes with more dependencies
+  useEffect(() => {
+    console.log('🎯 RootNavigator navigation state change detected:', {
+      isAuthenticated,
+      isLoading,
+      hasUser: !!user,
+      userEmail: user?.email,
+      timestamp: new Date().toISOString()
+    });
+  }, [isAuthenticated, isLoading, user]);
 
   // Show loading spinner while checking authentication state
   if (isLoading) {
@@ -29,12 +41,20 @@ export const RootNavigator: React.FC = () => {
 
   // Determine which stack to show
   const getActiveStack = () => {
+    console.log('🎮 getActiveStack called:', {
+      isAuthenticated,
+      isLoading,
+      hasUser: !!user,
+      userEmail: user?.email,
+      timestamp: new Date().toISOString()
+    });
+
     if (!isAuthenticated) {
-      console.log('RootNavigator: User not authenticated, showing AuthStack');
+      console.log('🚫 RootNavigator: User not authenticated, showing AuthStack');
       return <AuthStack />;
     }
     
-    console.log('RootNavigator: User authenticated, showing OnboardingStack');
+    console.log('✅ RootNavigator: User authenticated, showing OnboardingStack');
     // For now, always show onboarding for authenticated users during development
     // TODO: In Phase 1.4, we'll add onboardingCompleted check to user data
     const onboardingCompleted = false; // user?.onboardingCompleted || false;
@@ -46,8 +66,13 @@ export const RootNavigator: React.FC = () => {
     return <AppStack />;
   };
 
+  // Create a key that changes when auth state changes to force re-render
+  const navigationKey = `nav-${isAuthenticated ? 'auth' : 'unauth'}-${user?._id || 'no-user'}`;
+
+  console.log('🔑 NavigationContainer key:', navigationKey);
+
   return (
-    <NavigationContainer>
+    <NavigationContainer key={navigationKey}>
       {getActiveStack()}
     </NavigationContainer>
   );

@@ -86,12 +86,20 @@ export const signIn = action({
     const sessionToken = generateSessionToken();
     const expiresAt = Date.now() + (7 * 24 * 60 * 60 * 1000); // 7 days
 
+    console.log('🔑 Creating session for signin:', {
+      userId: user._id,
+      sessionToken: `${sessionToken.substring(0, 8)}...`,
+      expiresAt: new Date(expiresAt).toISOString()
+    });
+
     const sessionId = await ctx.runMutation(api.sessions.create, {
       token: sessionToken,
       userId: user._id,
       expiresAt,
       createdAt: Date.now(),
     });
+
+    console.log('✅ Session created successfully:', { sessionId });
 
     return { sessionToken, userId: user._id };
   },
@@ -123,7 +131,14 @@ export const getCurrentUser = query({
     sessionToken: v.optional(v.string()),
   },
   handler: async (ctx, args) => {
+    console.log('🔍 getCurrentUser called with:', {
+      hasSessionToken: !!args.sessionToken,
+      sessionToken: args.sessionToken ? `${args.sessionToken.substring(0, 8)}...` : 'none',
+      timestamp: new Date().toISOString()
+    });
+
     if (!args.sessionToken) {
+      console.log('❌ No session token provided, returning null');
       return null;
     }
 
@@ -133,15 +148,33 @@ export const getCurrentUser = query({
       .withIndex("by_token", (q) => q.eq("token", args.sessionToken!))
       .unique();
 
+    console.log('🔍 Session lookup result:', {
+      sessionFound: !!session,
+      sessionExpired: session ? session.expiresAt < Date.now() : 'n/a',
+      currentTime: Date.now(),
+      sessionExpiresAt: session?.expiresAt,
+      sessionUserId: session?.userId
+    });
+
     if (!session || session.expiresAt < Date.now()) {
+      console.log('❌ Session not found or expired, returning null');
       return null;
     }
 
     // Get user
     const user = await ctx.db.get(session.userId);
+    console.log('🔍 User lookup result:', {
+      userFound: !!user,
+      userEmail: user?.email,
+      userId: user?._id
+    });
+
     if (!user) {
+      console.log('❌ User not found, returning null');
       return null;
     }
+
+    console.log('✅ Successfully returning user:', user.email);
 
     // Return user without password hash
     if (user.passwordHash) {

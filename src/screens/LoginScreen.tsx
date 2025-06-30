@@ -14,7 +14,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [showSuccess, setShowSuccess] = useState(false);
-  const { handleSignIn } = useAuth();
+  const { handleSignIn, isAuthenticating } = useAuth();
 
   const handleLogin = async () => {
     if (!email || !password) {
@@ -24,12 +24,14 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
 
     setLoading(true);
     try {
+      console.log('🔐 LoginScreen: Starting handleSignIn...');
       await handleSignIn(email, password);
-      // Show success message
+      console.log('✅ LoginScreen: handleSignIn completed');
+      // Show success message and keep loading until auth state updates
       setLoading(false);
       setShowSuccess(true);
     } catch (error: any) {
-      console.error('Login error:', error);
+      console.error('❌ LoginScreen: Login error:', error);
       Alert.alert('Login Error', error.message || 'Failed to login');
       setLoading(false);
     }
@@ -80,7 +82,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ navigation }) => {
           <AuthButton
             title="Sign In"
             onPress={handleLogin}
-            loading={loading}
+            loading={loading || isAuthenticating}
           />
         </View>
 
