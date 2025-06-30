@@ -16,6 +16,7 @@ export const useAuth = () => {
     const loadSessionToken = async () => {
       try {
         const token = await AsyncStorage.getItem(SESSION_TOKEN_KEY);
+        console.log('Loaded session token from storage:', token ? `${token.substring(0, 8)}...` : 'none');
         setSessionToken(token);
       } catch (error) {
         console.error("Error loading session token:", error);
@@ -25,6 +26,11 @@ export const useAuth = () => {
     };
     loadSessionToken();
   }, []);
+
+  // Track sessionToken changes for debugging
+  useEffect(() => {
+    console.log('SessionToken changed:', sessionToken ? `${sessionToken.substring(0, 8)}...` : 'none');
+  }, [sessionToken]);
 
   // Get current user with session token
   const user = useQuery(api.auth.getCurrentUser, 
@@ -41,11 +47,13 @@ export const useAuth = () => {
   // Debug logging
   console.log('Auth State:', { 
     sessionToken: !!sessionToken, 
+    sessionTokenValue: sessionToken ? `${sessionToken.substring(0, 8)}...` : null,
     user: !!user, 
     isAuthenticated, 
     isLoading, 
     isAuthenticating,
-    userEmail: user?.email 
+    userEmail: user?.email,
+    userQueryState: user === undefined ? 'loading' : user === null ? 'null' : 'loaded'
   });
 
   // Store session token
@@ -78,10 +86,27 @@ export const useAuth = () => {
       await storeSessionToken(result.sessionToken);
       console.log('Token stored, authentication should update...');
       
-      // Add a small delay to allow query to refetch
-      setTimeout(() => {
-        setIsAuthenticating(false);
-      }, 1000);
+      // Wait a bit longer and check if user query is loaded before clearing isAuthenticating
+      let attempts = 0;
+      const checkUserLoaded = () => {
+        attempts++;
+        console.log(`Checking if user loaded... attempt ${attempts}`);
+        
+        // Check if user query has loaded with the new token
+        if (user && sessionToken) {
+          console.log('User loaded successfully, clearing authenticating state');
+          setIsAuthenticating(false);
+        } else if (attempts < 10) {
+          // Keep checking for up to 5 seconds
+          setTimeout(checkUserLoaded, 500);
+        } else {
+          console.log('Timeout waiting for user, clearing authenticating state anyway');
+          setIsAuthenticating(false);
+        }
+      };
+      
+      // Start checking after a short delay
+      setTimeout(checkUserLoaded, 500);
       
       return result;
     } catch (error: any) {
@@ -101,10 +126,27 @@ export const useAuth = () => {
       await storeSessionToken(result.sessionToken);
       console.log('Token stored, authentication should update...');
       
-      // Add a small delay to allow query to refetch
-      setTimeout(() => {
-        setIsAuthenticating(false);
-      }, 1000);
+      // Wait a bit longer and check if user query is loaded before clearing isAuthenticating
+      let attempts = 0;
+      const checkUserLoaded = () => {
+        attempts++;
+        console.log(`Checking if user loaded... attempt ${attempts}`);
+        
+        // Check if user query has loaded with the new token
+        if (user && sessionToken) {
+          console.log('User loaded successfully, clearing authenticating state');
+          setIsAuthenticating(false);
+        } else if (attempts < 10) {
+          // Keep checking for up to 5 seconds
+          setTimeout(checkUserLoaded, 500);
+        } else {
+          console.log('Timeout waiting for user, clearing authenticating state anyway');
+          setIsAuthenticating(false);
+        }
+      };
+      
+      // Start checking after a short delay
+      setTimeout(checkUserLoaded, 500);
       
       return result;
     } catch (error: any) {
